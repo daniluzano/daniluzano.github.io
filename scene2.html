@@ -44,8 +44,8 @@
 
     async function drawScene2() {
       const [menData, womenData] = await Promise.all([
-        d3.csv("young_men.csv"),
-        d3.csv("young_women.csv")
+        d3.csv("youth-literacy-male.csv"),
+        d3.csv("youth-literacy-female.csv")
       ]);
 
       const men = menData.filter(d => d.Entity === "World").map(d => ({
