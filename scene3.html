@@ -2,44 +2,35 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Scene 3: Literacy Rate by Country (2020)</title>
+  <title>Scene 3: Gender Gap in Literacy</title>
   <script src="https://d3js.org/d3.v7.min.js"></script>
   <style>
     body {
       font-family: sans-serif;
     }
+    .bar {
+      fill: darkorange;
+    }
+    .bar.negative {
+      fill: steelblue;
+    }
     .axis-label {
       font-size: 12px;
       fill: gray;
     }
-    .bar {
-      fill: steelblue;
-    }
-    .bar:hover {
-      fill: darkorange;
-    }
     .annotation {
       font-weight: bold;
-    }
-    .tooltip {
-      position: absolute;
-      background-color: #fff;
-      border: 1px solid #aaa;
-      padding: 6px;
-      font-size: 12px;
-      pointer-events: none;
     }
   </style>
 </head>
 <body>
-  <h2>Literacy Rate by Country in 2020</h2>
-  <svg width="800" height="500"></svg>
-  <div class="tooltip" style="opacity: 0;"></div>
+  <h2>Gender Gap in Youth Literacy by Country (2020)</h2>
+  <svg width="900" height="600"></svg>
 
   <script>
-    const margin = { top: 50, right: 30, bottom: 100, left: 60 },
-          width = 800 - margin.left - margin.right,
-          height = 500 - margin.top - margin.bottom;
+    const margin = { top: 50, right: 50, bottom: 50, left: 180 },
+          width = 900 - margin.left - margin.right,
+          height = 600 - margin.top - margin.bottom;
 
     const svg = d3.select("svg")
       .attr("width", width + margin.left + margin.right)
@@ -47,78 +38,93 @@
       .append("g")
       .attr("transform", `translate(${margin.left},${margin.top})`);
 
-    const tooltip = d3.select(".tooltip");
-
     async function drawScene3() {
-      const dataRaw = await d3.csv("literate-and-illiterate-world-population.csv");
+      const [menData, womenData] = await Promise.all([
+        d3.csv("youth-literacy-males.csv"),
+        d3.csv("youth-literacy-female.csv")
+      ]);
 
-      const data = dataRaw
-        .filter(d => d.Year === "2020" && d["Literacy rate"] !== "")
-        .map(d => ({
-          country: d.Entity,
-          literacy: +d["Literacy rate"]
-        }))
-        .sort((a, b) => b.literacy - a.literacy)
-        .slice(0, 10); // Top 10
+      // Join by Entity
+      const menMap = new Map();
+      menData.forEach(d => {
+        if (d.Year === "2020" && d["Literacy rate among young men"]) {
+          menMap.set(d.Entity, +d["Literacy rate among young men"]);
+        }
+      });
 
-      const x = d3.scaleBand()
-        .domain(data.map(d => d.country))
-        .range([0, width])
-        .padding(0.2);
+      const gapData = womenData
+        .filter(d => d.Year === "2020" && d["Literacy rate among young women"])
+        .map(d => {
+          const maleRate = menMap.get(d.Entity);
+          const femaleRate = +d["Literacy rate among young women"];
+          const gap = maleRate - femaleRate;
+          return {
+            country: d.Entity,
+            gap: gap,
+            maleRate: maleRate,
+            femaleRate: femaleRate
+          };
+        })
+        .filter(d => d.maleRate !== undefined)
+        .sort((a, b) => Math.abs(b.gap) - Math.abs(a.gap))
+        .slice(0, 15); // Top 15 gender gaps
 
-      const y = d3.scaleLinear()
-        .domain([0, 100])
-        .range([height, 0]);
+      const y = d3.scaleBand()
+        .domain(gapData.map(d => d.country))
+        .range([0, height])
+        .padding(0.1);
+
+      const x = d3.scaleLinear()
+        .domain([-20, 20]) // adjust if needed
+        .range([0, width]);
+
+      const xAxis = d3.axisBottom(x).ticks(10);
+      const yAxis = d3.axisLeft(y);
 
       svg.append("g")
         .attr("transform", `translate(0,${height})`)
-        .call(d3.axisBottom(x))
-        .selectAll("text")
-        .attr("transform", "rotate(-45)")
-        .style("text-anchor", "end");
+        .call(xAxis);
 
-      svg.append("g").call(d3.axisLeft(y));
+      svg.append("g").call(yAxis);
 
       svg.append("text")
         .attr("class", "axis-label")
         .attr("x", width / 2)
-        .attr("y", height + 80)
+        .attr("y", height + 40)
         .attr("text-anchor", "middle")
-        .text("Country");
+        .text("Literacy Rate Gap (Male % − Female %)");
 
       svg.append("text")
         .attr("class", "axis-label")
-        .attr("transform", "rotate(-90)")
-        .attr("x", -height / 2)
-        .attr("y", -40)
-        .attr("text-anchor", "middle")
-        .text("Literacy Rate (%)");
+        .attr("x", -margin.left + 10)
+        .attr("y", -15)
+        .attr("text-anchor", "start")
+        .text("Country");
 
       svg.selectAll(".bar")
-        .data(data)
+        .data(gapData)
         .enter()
         .append("rect")
-        .attr("class", "bar")
-        .attr("x", d => x(d.country))
-        .attr("y", d => y(d.literacy))
-        .attr("width", x.bandwidth())
-        .attr("height", d => height - y(d.literacy))
-        .on("mouseover", (event, d) => {
-          tooltip
-            .style("opacity", 1)
-            .html(`<strong>${d.country}</strong><br/>Literacy: ${d.literacy}%`)
-            .style("left", (event.pageX + 10) + "px")
-            .style("top", (event.pageY - 28) + "px");
-        })
-        .on("mouseout", () => {
-          tooltip.style("opacity", 0);
-        });
+        .attr("class", d => "bar " + (d.gap < 0 ? "negative" : ""))
+        .attr("x", d => x(Math.min(0, d.gap)))
+        .attr("y", d => y(d.country))
+        .attr("width", d => Math.abs(x(d.gap) - x(0)))
+        .attr("height", y.bandwidth());
+
+      svg.selectAll(".label")
+        .data(gapData)
+        .enter()
+        .append("text")
+        .attr("x", d => x(d.gap) + (d.gap >= 0 ? 5 : -5))
+        .attr("y", d => y(d.country) + y.bandwidth() / 2 + 5)
+        .attr("text-anchor", d => d.gap >= 0 ? "start" : "end")
+        .text(d => `${d.gap.toFixed(1)}%`);
 
       svg.append("text")
         .attr("class", "annotation")
         .attr("x", 0)
-        .attr("y", -20)
-        .text("Top 10 countries by youth literacy rate in 2020");
+        .attr("y", -30)
+        .text("Positive = Higher male literacy | Negative = Higher female literacy");
     }
 
     drawScene3();
