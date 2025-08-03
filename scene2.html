@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Scene 2: Literacy Rate by Gender</title>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <style>
+    body {
+      font-family: sans-serif;
+    }
+    .axis-label {
+      font-size: 12px;
+      fill: gray;
+    }
+    .line-men {
+      stroke: steelblue;
+      stroke-width: 2.5px;
+      fill: none;
+    }
+    .line-women {
+      stroke: deeppink;
+      stroke-width: 2.5px;
+      fill: none;
+    }
+    .annotation {
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <h2>Literacy Rate Among Young Men and Women (World)</h2>
+  <svg width="800" height="500"></svg>
+
+  <script>
+    const margin = 50,
+          width = 500,
+          height = 400;
+
+    const svg = d3.select("svg")
+      .attr("width", 800)
+      .attr("height", 500)
+      .append("g")
+      .attr("transform", `translate(50,50)`);
+
+    async function drawScene2() {
+      const [menData, womenData] = await Promise.all([
+        d3.csv("young_men.csv"),
+        d3.csv("young_women.csv")
+      ]);
+
+      const men = menData.filter(d => d.Entity === "World").map(d => ({
+        Year: +d.Year,
+        Rate: +d["Literacy rate among young men"]
+      }));
+
+      const women = womenData.filter(d => d.Entity === "World").map(d => ({
+        Year: +d.Year,
+        Rate: +d["Literacy rate among young women"]
+      }));
+
+      const x = d3.scaleLinear()
+        .domain(d3.extent(men, d => d.Year))
+        .range([0, width]);
+
+      const y = d3.scaleLinear()
+        .domain([0, 100])
+        .range([height, 0]);
+
+      const xAxis = d3.axisBottom(x).tickFormat(d3.format("d"));
+      const yAxis = d3.axisLeft(y);
+
+      svg.append("g")
+        .attr("transform", `translate(0,${height})`)
+        .call(xAxis);
+
+      svg.append("g").call(yAxis);
+
+      svg.append("text")
+        .attr("class", "axis-label")
+        .attr("x", width / 2)
+        .attr("y", height + 40)
+        .text("Year");
+
+      svg.append("text")
+        .attr("class", "axis-label")
+        .attr("transform", "rotate(-90)")
+        .attr("x", -height / 2)
+        .attr("y", -45)
+        .text("Literacy Rate (%)");
+
+      const lineMen = d3.line()
+        .x(d => x(d.Year))
+        .y(d => y(d.Rate));
+
+      svg.append("path")
+        .datum(men)
+        .attr("class", "line-men")
+        .attr("d", lineMen);
+
+      const lineWomen = d3.line()
+        .x(d => x(d.Year))
+        .y(d => y(d.Rate));
+
+      svg.append("path")
+        .datum(women)
+        .attr("class", "line-women")
+        .attr("d", lineWomen);
+
+      const lastYear = 2020;
+      const men2020 = men.find(d => d.Year === lastYear);
+      const women2020 = women.find(d => d.Year === lastYear);
+
+      svg.append("circle")
+        .attr("cx", x(men2020.Year))
+        .attr("cy", y(men2020.Rate))
+        .attr("r", 4)
+        .attr("fill", "blue");
+
+      svg.append("circle")
+        .attr("cx", x(women2020.Year))
+        .attr("cy", y(women2020.Rate))
+        .attr("r", 4)
+        .attr("fill", "pink");
+
+      svg.append("text")
+        .attr("class", "annotation")
+        .attr("x", x(men2020.Year) - 180)
+        .attr("y", y(men2020.Rate) - 10)
+        .text(`2020: Men ${men2020.Rate}%  |  Women ${women2020.Rate}%`);
+    }
+
+    drawScene2();
+  </script>
+</body>
+</html>
