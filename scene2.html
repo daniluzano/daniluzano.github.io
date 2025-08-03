@@ -32,9 +32,9 @@
   <svg width="800" height="500"></svg>
 
   <script>
-    const margin = 50,
-          width = 500,
-          height = 400;
+    const margin = { top: 50, right: 50, bottom: 50, left: 60 },
+      width = 800 - margin.left - margin.right,
+      height = 500 - margin.top - margin.bottom;
 
     const svg = d3.select("svg")
       .attr("width", 800)
@@ -63,7 +63,7 @@
         .range([0, width]);
 
       const y = d3.scaleLinear()
-        .domain([0, 100])
+        .domain([60, 100])
         .range([height, 0]);
 
       const xAxis = d3.axisBottom(x).tickFormat(d3.format("d"));
