@@ -46,154 +46,110 @@
 
   <script>
     const margin = { top: 50, right: 50, bottom: 50, left: 180 },
-          width = 900 - margin.left - margin.right,
-          height = 600 - margin.top - margin.bottom;
+      width = 900 - margin.left - margin.right,
+      height = 600 - margin.top - margin.bottom;
 
-    const svg = d3.select("svg")
-      .attr("width", width + margin.left + margin.right)
-      .attr("height", height + margin.top + margin.bottom)
-      .append("g")
-      .attr("transform", `translate(${margin.left},${margin.top})`);
+const svg = d3.select("svg")
+  .attr("width", width + margin.left + margin.right)
+  .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+  .attr("transform", `translate(${margin.left},${margin.top})`);
 
-    const tooltip = d3.select("#tooltip");
+const tooltip = d3.select("#tooltip");
 
-    async function drawScene3() {
-      const [menData, womenData] = await Promise.all([
-        d3.csv("youth-literacy-males.csv"),
-        d3.csv("youth-literacy-female.csv")
-      ]);
+let gapData = []; // <-- Declare globally so updateChart can access
 
-      const menMap = new Map();
-      menData.forEach(d => {
-        if (d.Year === "2020" && d["Literacy rate among young men"]) {
-          menMap.set(d.Entity, +d["Literacy rate among young men"]);
-        }
-      });
+const y = d3.scaleBand()
+  .range([0, height])
+  .padding(0.1);
 
-      const gapData = womenData
-        .filter(d => d.Year === "2020" && d["Literacy rate among young women"])
-        .map(d => {
-          const maleRate = menMap.get(d.Entity);
-          const femaleRate = +d["Literacy rate among young women"];
-          const gap = maleRate - femaleRate;
-          return {
-            country: d.Entity,
-            gap: gap,
-            maleRate: maleRate,
-            femaleRate: femaleRate
-          };
-        })
-        .filter(d => d.maleRate !== undefined)
-        .sort((a, b) => Math.abs(b.gap) - Math.abs(a.gap))
-        .slice(0, 15);
+const x = d3.scaleLinear()
+  .domain([-20, 20])
+  .range([0, width]);
 
-      const y = d3.scaleBand()
-        .domain(gapData.map(d => d.country))
-        .range([0, height])
-        .padding(0.1);
+const xAxis = d3.axisBottom(x).ticks(10);
+const yAxis = d3.axisLeft(y);
 
-      const x = d3.scaleLinear()
-        .domain([-20, 20])
-        .range([0, width]);
+async function drawScene3() {
+  const [menData, womenData] = await Promise.all([
+    d3.csv("youth-literacy-males.csv"),
+    d3.csv("youth-literacy-female.csv")
+  ]);
 
-      const xAxis = d3.axisBottom(x).ticks(10);
-      const yAxis = d3.axisLeft(y);
-
-      svg.append("g")
-        .attr("transform", `translate(0,${height})`)
-        .call(xAxis);
-
-      svg.append("g").call(yAxis);
-
-      svg.append("text")
-        .attr("class", "axis-label")
-        .attr("x", width / 2)
-        .attr("y", height + 40)
-        .attr("text-anchor", "middle")
-        .text("Literacy Rate Gap (Male % − Female %)");
-
-      svg.append("text")
-        .attr("class", "axis-label")
-        .attr("x", -margin.left + 10)
-        .attr("y", -15)
-        .attr("text-anchor", "start")
-        .text("Country");
-
-      svg.selectAll(".bar")
-        .data(gapData)
-        .enter()
-        .append("rect")
-        .attr("class", d => "bar " + (d.gap < 0 ? "negative" : ""))
-        .attr("x", d => x(Math.min(0, d.gap)))
-        .attr("y", d => y(d.country))
-        .attr("width", d => Math.abs(x(d.gap) - x(0)))
-        .attr("height", y.bandwidth())
-        .on("mouseover", (event, d) => {
-          tooltip.style("opacity", 1)
-            .html(`
-              <strong>${d.country}</strong><br/>
-              Male Literacy: ${d.maleRate.toFixed(1)}%<br/>
-              Female Literacy: ${d.femaleRate.toFixed(1)}%<br/>
-              Gap: ${d.gap.toFixed(1)}%
-            `)
-            .style("left", (event.pageX + 10) + "px")
-            .style("top", (event.pageY - 30) + "px");
-        })
-        .on("mousemove", (event) => {
-          tooltip
-            .style("left", (event.pageX + 10) + "px")
-            .style("top", (event.pageY - 30) + "px");
-        })
-        .on("mouseout", () => {
-          tooltip.style("opacity", 0);
-        });
-
-      svg.selectAll(".label")
-        .data(gapData)
-        .enter()
-        .append("text")
-        .attr("x", d => x(d.gap) + (d.gap >= 0 ? 5 : -5))
-        .attr("y", d => y(d.country) + y.bandwidth() / 2 + 5)
-        .attr("text-anchor", d => d.gap >= 0 ? "start" : "end")
-        .text(d => `${d.gap.toFixed(1)}%`);
-
-      svg.append("text")
-        .attr("class", "annotation")
-        .attr("x", 0)
-        .attr("y", -30)
-        .text("Negative = Higher female literacy | Positive = Higher male literacy");
+  const menMap = new Map();
+  menData.forEach(d => {
+    if (d.Year === "2020" && d["Literacy rate among young men"]) {
+      menMap.set(d.Entity, +d["Literacy rate among young men"]);
     }
+  });
 
-    drawScene3();
+  gapData = womenData
+    .filter(d => d.Year === "2020" && d["Literacy rate among young women"])
+    .map(d => {
+      const maleRate = menMap.get(d.Entity);
+      const femaleRate = +d["Literacy rate among young women"];
+      const gap = maleRate - femaleRate;
+      return {
+        country: d.Entity,
+        gap: gap,
+        maleRate: maleRate,
+        femaleRate: femaleRate
+      };
+    })
+    .filter(d => d.maleRate !== undefined)
+    .sort((a, b) => Math.abs(b.gap) - Math.abs(a.gap))
+    .slice(0, 15);
 
-    const slider = d3.select("#gapThreshold");
-const gapValueLabel = d3.select("#gapValue");
+  // Initialize y domain with all gapData countries
+  y.domain(gapData.map(d => d.country));
+
+  // Draw static axes (x-axis and initial y-axis)
+  svg.append("g")
+    .attr("transform", `translate(0,${height})`)
+    .call(xAxis);
+
+  svg.append("g")
+    .attr("class", "y-axis") // Give a class to select later for updates
+    .call(yAxis);
+
+  svg.append("text")
+    .attr("class", "axis-label")
+    .attr("x", width / 2)
+    .attr("y", height + 40)
+    .attr("text-anchor", "middle")
+    .text("Literacy Rate Gap (Male % − Female %)");
+
+  svg.append("text")
+    .attr("class", "axis-label")
+    .attr("x", -margin.left + 10)
+    .attr("y", -15)
+    .attr("text-anchor", "start")
+    .text("Country");
+
+  // Initially draw bars and labels with full data
+  updateChart(0);
+}
 
 function updateChart(minGap) {
   // Filter data based on absolute gap threshold
   const filteredData = gapData.filter(d => Math.abs(d.gap) >= minGap);
 
+  // Update y domain and axis
   y.domain(filteredData.map(d => d.country));
+  svg.select("g.y-axis").transition().duration(500).call(yAxis);
 
-  // Update y-axis
-  svg.select("g.y-axis")
-     .call(yAxis);
-
-  // DATA JOIN
+  // DATA JOIN bars
   const bars = svg.selectAll(".bar")
     .data(filteredData, d => d.country);
 
-  // EXIT
   bars.exit().remove();
 
-  // UPDATE
   bars
     .attr("x", d => x(Math.min(0, d.gap)))
     .attr("y", d => y(d.country))
     .attr("width", d => Math.abs(x(d.gap) - x(0)))
     .attr("height", y.bandwidth());
 
-  // ENTER
   bars.enter()
     .append("rect")
     .attr("class", d => "bar " + (d.gap < 0 ? "negative" : ""))
@@ -221,7 +177,7 @@ function updateChart(minGap) {
       tooltip.style("opacity", 0);
     });
 
-  // Update labels similarly...
+  // DATA JOIN labels
   const labels = svg.selectAll(".label")
     .data(filteredData, d => d.country);
 
@@ -242,17 +198,14 @@ function updateChart(minGap) {
     .text(d => `${d.gap.toFixed(1)}%`);
 }
 
-slider.on("input", function() {
+// Listen for slider input changes
+d3.select("#gapThreshold").on("input", function() {
   const minGap = +this.value;
-  gapValueLabel.text(minGap + "%");
+  d3.select("#gapValue").text(minGap + "%");
   updateChart(minGap);
 });
 
-drawScene3().then(() => {
-  // Initialize chart with min gap 0
-  svg.append("g").attr("class", "y-axis").call(yAxis);
-  updateChart(0);
-});
+drawScene3();
 
   </script>
 
