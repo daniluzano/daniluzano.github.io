@@ -21,10 +21,20 @@
     .annotation {
       font-weight: bold;
     }
+    select {
+      margin-bottom: 15px;
+      font-size: 16px;
+    }
   </style>
 </head>
 <body>
   <h2>Gender Gap in Youth Literacy by Country (2020)</h2>
+
+  <label for="country-select"><strong>Select a country:</strong></label>
+  <select id="country-select">
+    <option disabled selected value> -- choose a country -- </option>
+  </select>
+
   <svg width="900" height="600"></svg>
 
   <script>
@@ -38,13 +48,14 @@
       .append("g")
       .attr("transform", `translate(${margin.left},${margin.top})`);
 
+    let allData = [];
+
     async function drawScene3() {
       const [menData, womenData] = await Promise.all([
         d3.csv("youth-literacy-males.csv"),
         d3.csv("youth-literacy-female.csv")
       ]);
 
-      // Join by Entity
       const menMap = new Map();
       menData.forEach(d => {
         if (d.Year === "2020" && d["Literacy rate among young men"]) {
@@ -52,7 +63,7 @@
         }
       });
 
-      const gapData = womenData
+      allData = womenData
         .filter(d => d.Year === "2020" && d["Literacy rate among young women"])
         .map(d => {
           const maleRate = menMap.get(d.Entity);
@@ -65,17 +76,31 @@
             femaleRate: femaleRate
           };
         })
-        .filter(d => d.maleRate !== undefined)
+        .filter(d => d.maleRate !== undefined);
+
+      // Populate dropdown
+      const select = d3.select("#country-select");
+      allData
+        .sort((a, b) => d3.ascending(a.country, b.country))
+        .forEach(d => {
+          select.append("option").attr("value", d.country).text(d.country);
+        });
+
+      drawBars(allData
         .sort((a, b) => Math.abs(b.gap) - Math.abs(a.gap))
-        .slice(0, 15); // Top 15 gender gaps
+        .slice(0, 15));
+    }
+
+    function drawBars(data) {
+      svg.selectAll("*").remove();
 
       const y = d3.scaleBand()
-        .domain(gapData.map(d => d.country))
+        .domain(data.map(d => d.country))
         .range([0, height])
         .padding(0.1);
 
       const x = d3.scaleLinear()
-        .domain([-20, 20]) // adjust if needed
+        .domain([-20, 20]) // Adjust based on actual data
         .range([0, width]);
 
       const xAxis = d3.axisBottom(x).ticks(10);
@@ -102,17 +127,19 @@
         .text("Country");
 
       svg.selectAll(".bar")
-        .data(gapData)
+        .data(data)
         .enter()
         .append("rect")
         .attr("class", d => "bar " + (d.gap < 0 ? "negative" : ""))
         .attr("x", d => x(Math.min(0, d.gap)))
         .attr("y", d => y(d.country))
         .attr("width", d => Math.abs(x(d.gap) - x(0)))
-        .attr("height", y.bandwidth());
+        .attr("height", y.bandwidth())
+        .append("title") // Tooltip
+        .text(d => `Male: ${d.maleRate}%\nFemale: ${d.femaleRate}%`);
 
       svg.selectAll(".label")
-        .data(gapData)
+        .data(data)
         .enter()
         .append("text")
         .attr("x", d => x(d.gap) + (d.gap >= 0 ? 5 : -5))
@@ -126,6 +153,13 @@
         .attr("y", -30)
         .text("Positive = Higher male literacy | Negative = Higher female literacy");
     }
+
+    // Trigger dropdown interaction
+    d3.select("#country-select").on("change", function () {
+      const selected = this.value;
+      const selectedData = allData.filter(d => d.country === selected);
+      drawBars(selectedData);
+    });
 
     drawScene3();
   </script>
