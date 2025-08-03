@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Scene 2: Literacy Rate by Gender</title>
   <script src="https://d3js.org/d3.v7.min.js"></script>
   <style>
@@ -24,6 +24,9 @@
     }
     .annotation {
       font-weight: bold;
+      fill: #333;
+      font-size: 12px;
+      pointer-events: none;
     }
   </style>
 </head>
@@ -32,8 +35,8 @@
   <svg width="800" height="500"></svg>
 
   <script>
-    const margin = { top: 50, right: 50, bottom: 50, left: 60 },
-      width = 800 - margin.left - margin.right - 50,
+    const margin = { top: 50, right: 50, bottom: 50, left: 70 },
+      width = 800 - margin.left - margin.right,
       height = 500 - margin.top - margin.bottom;
 
     const svg = d3.select("svg")
@@ -86,7 +89,7 @@
         .attr("class", "axis-label")
         .attr("transform", "rotate(-90)")
         .attr("x", -height / 2)
-        .attr("y", -45)
+        .attr("y", -50)
         .attr("text-anchor", "middle")
         .text("Literacy Rate (%)");
 
@@ -110,7 +113,7 @@
         .attr("class", "line-women")
         .attr("d", lineWomen);
 
-      // Add annotation for 2020
+      // Add annotation for 2020 points
       const lastYear = 2020;
       const men2020 = men.find(d => d.Year === lastYear);
       const women2020 = women.find(d => d.Year === lastYear);
@@ -133,36 +136,34 @@
         .attr("y", y(men2020.Rate) - 10)
         .text(`2020: Men ${men2020.Rate}%  |  Women ${women2020.Rate}%`);
 
-        // Gender parity annotation at recent year
-    const parityYear = 2020;
-    const men2020 = men.find(d => d.Year === parityYear);
-    const women2020 = women.find(d => d.Year === parityYear);
+      // Gender parity annotation at recent year
+      const parityYear = 2020;
 
-    svg.append("text")
-    .attr("x", x(parityYear) - 80)
-    .attr("y", y(men2020.Rate) - 30)
-    .attr("class", "annotation")
-    .text("Nearly equal literacy rates in 2020");
+      svg.append("text")
+        .attr("x", x(parityYear) - 80)
+        .attr("y", y(men2020.Rate) - 30)
+        .attr("class", "annotation")
+        .text("Nearly equal literacy rates in 2020");
 
-    // Historical gap annotation around mid-century (example: 1950)
-    svg.append("text")
-    .attr("x", x(1950))
-    .attr("y", y(70))
-    .attr("class", "annotation")
-    .text("Historical gender gap");
+      // Historical gap annotation around mid-century (example: 1950)
+      svg.append("text")
+        .attr("x", x(1950))
+        .attr("y", y(70))
+        .attr("class", "annotation")
+        .text("Historical gender gap");
 
-    // Max literacy rate label near top
-    svg.append("text")
-    .attr("x", width - 60)
-    .attr("y", y(100) - 10)
-    .attr("class", "annotation")
-    .text("Max ~100%");
-
+      // Max literacy rate label near top
+      svg.append("text")
+        .attr("x", width - 60)
+        .attr("y", y(100) - 10)
+        .attr("class", "annotation")
+        .text("Max ~100%");
     }
 
     drawScene2();
   </script>
-   <div style="margin-top: 30px; font-size: 18px;">
+
+  <div style="margin-top: 30px; font-size: 18px;">
     <a href="index.html">← Previous</a>
     &nbsp;&nbsp;&nbsp;
     <a href="scene3.html">Next →</a>
