@@ -132,6 +132,32 @@
         .attr("x", x(men2020.Year) - 180)
         .attr("y", y(men2020.Rate) - 10)
         .text(`2020: Men ${men2020.Rate}%  |  Women ${women2020.Rate}%`);
+
+        // Gender parity annotation at recent year
+    const parityYear = 2020;
+    const men2020 = men.find(d => d.Year === parityYear);
+    const women2020 = women.find(d => d.Year === parityYear);
+
+    svg.append("text")
+    .attr("x", x(parityYear) - 80)
+    .attr("y", y(men2020.Rate) - 30)
+    .attr("class", "annotation")
+    .text("Nearly equal literacy rates in 2020");
+
+    // Historical gap annotation around mid-century (example: 1950)
+    svg.append("text")
+    .attr("x", x(1950))
+    .attr("y", y(70))
+    .attr("class", "annotation")
+    .text("Historical gender gap");
+
+    // Max literacy rate label near top
+    svg.append("text")
+    .attr("x", width - 60)
+    .attr("y", y(100) - 10)
+    .attr("class", "annotation")
+    .text("Max ~100%");
+
     }
 
     drawScene2();

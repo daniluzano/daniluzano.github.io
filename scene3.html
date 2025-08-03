@@ -126,6 +126,35 @@ async function drawScene3() {
     .attr("text-anchor", "start")
     .text("Country");
 
+    // Largest gap country label
+const largestGap = gapData.reduce((a, b) => Math.abs(a.gap) > Math.abs(b.gap) ? a : b);
+
+svg.append("text")
+  .attr("x", x(largestGap.gap) + (largestGap.gap > 0 ? 10 : -10))
+  .attr("y", y(largestGap.country) + y.bandwidth()/2)
+  .attr("class", "annotation")
+  .style("font-size", "14px")
+  .style("fill", "red")
+  .text(`Largest gap: ${largestGap.country}`);
+
+// Zero line annotation
+svg.append("text")
+  .attr("x", x(0))
+  .attr("y", -10)
+  .attr("class", "annotation")
+  .attr("text-anchor", "middle")
+  .style("font-style", "italic")
+  .text("Zero gap = Gender parity");
+
+// More explicit explanation of gap direction
+svg.append("text")
+  .attr("x", width / 2)
+  .attr("y", height + 50)
+  .attr("class", "annotation")
+  .attr("text-anchor", "middle")
+  .text("Positive gap = Higher male literacy | Negative gap = Higher female literacy");
+
+
   // Initially draw bars and labels with full data
   updateChart(0);
 }
