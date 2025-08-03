@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Scene 3: Gender Gap in Literacy</title>
   <script src="https://d3js.org/d3.v7.min.js"></script>
   <style>
@@ -25,6 +25,20 @@
 </head>
 <body>
   <h2>Gender Gap in Youth Literacy by Country (2020)</h2>
+
+  <!-- Tooltip div -->
+  <div id="tooltip" style="
+    position: absolute;
+    background: white;
+    border: 1px solid gray;
+    padding: 6px 10px;
+    border-radius: 4px;
+    pointer-events: none;
+    opacity: 0;
+    font-size: 14px;
+    box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
+  "></div>
+
   <svg width="900" height="600"></svg>
 
   <script>
@@ -38,13 +52,14 @@
       .append("g")
       .attr("transform", `translate(${margin.left},${margin.top})`);
 
+    const tooltip = d3.select("#tooltip");
+
     async function drawScene3() {
       const [menData, womenData] = await Promise.all([
         d3.csv("youth-literacy-males.csv"),
         d3.csv("youth-literacy-female.csv")
       ]);
 
-      // Join by Entity
       const menMap = new Map();
       menData.forEach(d => {
         if (d.Year === "2020" && d["Literacy rate among young men"]) {
@@ -67,7 +82,7 @@
         })
         .filter(d => d.maleRate !== undefined)
         .sort((a, b) => Math.abs(b.gap) - Math.abs(a.gap))
-        .slice(0, 15); // Top 15 gender gaps
+        .slice(0, 15);
 
       const y = d3.scaleBand()
         .domain(gapData.map(d => d.country))
@@ -75,7 +90,7 @@
         .padding(0.1);
 
       const x = d3.scaleLinear()
-        .domain([-20, 20]) // adjust if needed
+        .domain([-20, 20])
         .range([0, width]);
 
       const xAxis = d3.axisBottom(x).ticks(10);
@@ -109,7 +124,26 @@
         .attr("x", d => x(Math.min(0, d.gap)))
         .attr("y", d => y(d.country))
         .attr("width", d => Math.abs(x(d.gap) - x(0)))
-        .attr("height", y.bandwidth());
+        .attr("height", y.bandwidth())
+        .on("mouseover", (event, d) => {
+          tooltip.style("opacity", 1)
+            .html(`
+              <strong>${d.country}</strong><br/>
+              Male Literacy: ${d.maleRate.toFixed(1)}%<br/>
+              Female Literacy: ${d.femaleRate.toFixed(1)}%<br/>
+              Gap: ${d.gap.toFixed(1)}%
+            `)
+            .style("left", (event.pageX + 10) + "px")
+            .style("top", (event.pageY - 30) + "px");
+        })
+        .on("mousemove", (event) => {
+          tooltip
+            .style("left", (event.pageX + 10) + "px")
+            .style("top", (event.pageY - 30) + "px");
+        })
+        .on("mouseout", () => {
+          tooltip.style("opacity", 0);
+        });
 
       svg.selectAll(".label")
         .data(gapData)
