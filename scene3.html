@@ -25,6 +25,9 @@
 </head>
 <body>
   <h2>Gender Gap in Youth Literacy by Country (2020)</h2>
+    <label for="gapThreshold" style="font-weight:bold;">Minimum literacy gap to show (%): </label>
+    <input type="range" id="gapThreshold" min="0" max="20" value="0" step="0.5" style="width:300px;">
+    <span id="gapValue">0%</span>
 
   <!-- Tooltip div -->
   <div id="tooltip" style="
@@ -162,6 +165,95 @@
     }
 
     drawScene3();
+
+    const slider = d3.select("#gapThreshold");
+const gapValueLabel = d3.select("#gapValue");
+
+function updateChart(minGap) {
+  // Filter data based on absolute gap threshold
+  const filteredData = gapData.filter(d => Math.abs(d.gap) >= minGap);
+
+  y.domain(filteredData.map(d => d.country));
+
+  // Update y-axis
+  svg.select("g.y-axis")
+     .call(yAxis);
+
+  // DATA JOIN
+  const bars = svg.selectAll(".bar")
+    .data(filteredData, d => d.country);
+
+  // EXIT
+  bars.exit().remove();
+
+  // UPDATE
+  bars
+    .attr("x", d => x(Math.min(0, d.gap)))
+    .attr("y", d => y(d.country))
+    .attr("width", d => Math.abs(x(d.gap) - x(0)))
+    .attr("height", y.bandwidth());
+
+  // ENTER
+  bars.enter()
+    .append("rect")
+    .attr("class", d => "bar " + (d.gap < 0 ? "negative" : ""))
+    .attr("x", d => x(Math.min(0, d.gap)))
+    .attr("y", d => y(d.country))
+    .attr("width", d => Math.abs(x(d.gap) - x(0)))
+    .attr("height", y.bandwidth())
+    .on("mouseover", (event, d) => {
+      tooltip.style("opacity", 1)
+        .html(`
+          <strong>${d.country}</strong><br/>
+          Male Literacy: ${d.maleRate.toFixed(1)}%<br/>
+          Female Literacy: ${d.femaleRate.toFixed(1)}%<br/>
+          Gap: ${d.gap.toFixed(1)}%
+        `)
+        .style("left", (event.pageX + 10) + "px")
+        .style("top", (event.pageY - 30) + "px");
+    })
+    .on("mousemove", (event) => {
+      tooltip
+        .style("left", (event.pageX + 10) + "px")
+        .style("top", (event.pageY - 30) + "px");
+    })
+    .on("mouseout", () => {
+      tooltip.style("opacity", 0);
+    });
+
+  // Update labels similarly...
+  const labels = svg.selectAll(".label")
+    .data(filteredData, d => d.country);
+
+  labels.exit().remove();
+
+  labels
+    .attr("x", d => x(d.gap) + (d.gap >= 0 ? 5 : -5))
+    .attr("y", d => y(d.country) + y.bandwidth() / 2 + 5)
+    .attr("text-anchor", d => d.gap >= 0 ? "start" : "end")
+    .text(d => `${d.gap.toFixed(1)}%`);
+
+  labels.enter()
+    .append("text")
+    .attr("class", "label")
+    .attr("x", d => x(d.gap) + (d.gap >= 0 ? 5 : -5))
+    .attr("y", d => y(d.country) + y.bandwidth() / 2 + 5)
+    .attr("text-anchor", d => d.gap >= 0 ? "start" : "end")
+    .text(d => `${d.gap.toFixed(1)}%`);
+}
+
+slider.on("input", function() {
+  const minGap = +this.value;
+  gapValueLabel.text(minGap + "%");
+  updateChart(minGap);
+});
+
+drawScene3().then(() => {
+  // Initialize chart with min gap 0
+  svg.append("g").attr("class", "y-axis").call(yAxis);
+  updateChart(0);
+});
+
   </script>
 
   <div style="margin-top: 30px; font-size: 18px;">
