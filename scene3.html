@@ -38,130 +38,104 @@
   <svg width="900" height="600"></svg>
 
   <script>
-    const margin = { top: 50, right: 50, bottom: 50, left: 180 },
-          width = 900 - margin.left - margin.right,
-          height = 600 - margin.top - margin.bottom;
+    const margin = { top: 50, right: 50, bottom: 50, left: 60 },
+    width = 800 - margin.left - margin.right,
+    height = 500 - margin.top - margin.bottom,
+    radius = Math.min(width, height) / 2 - 50;
 
     const svg = d3.select("svg")
-      .attr("width", width + margin.left + margin.right)
-      .attr("height", height + margin.top + margin.bottom)
-      .append("g")
-      .attr("transform", `translate(${margin.left},${margin.top})`);
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+    .append("g")
+    .attr("transform", `translate(${(width + margin.left + margin.right)/2}, ${(height + margin.top + margin.bottom)/2})`);
 
     let allData = [];
 
     async function drawScene3() {
-      const [menData, womenData] = await Promise.all([
+    const [menData, womenData] = await Promise.all([
         d3.csv("youth-literacy-males.csv"),
         d3.csv("youth-literacy-female.csv")
-      ]);
+    ]);
 
-      const menMap = new Map();
-      menData.forEach(d => {
+    const menMap = new Map();
+    menData.forEach(d => {
         if (d.Year === "2020" && d["Literacy rate among young men"]) {
-          menMap.set(d.Entity, +d["Literacy rate among young men"]);
+        menMap.set(d.Entity, +d["Literacy rate among young men"]);
         }
-      });
+    });
 
-      allData = womenData
+    allData = womenData
         .filter(d => d.Year === "2020" && d["Literacy rate among young women"])
         .map(d => {
-          const maleRate = menMap.get(d.Entity);
-          const femaleRate = +d["Literacy rate among young women"];
-          const gap = maleRate - femaleRate;
-          return {
+        const maleRate = menMap.get(d.Entity);
+        const femaleRate = +d["Literacy rate among young women"];
+        const gap = maleRate - femaleRate;
+        return {
             country: d.Entity,
             gap: gap,
             maleRate: maleRate,
             femaleRate: femaleRate
-          };
+        };
         })
         .filter(d => d.maleRate !== undefined);
 
-      // Populate dropdown
-      const select = d3.select("#country-select");
-      allData
+    // Populate dropdown
+    const select = d3.select("#country-select");
+    allData
         .sort((a, b) => d3.ascending(a.country, b.country))
         .forEach(d => {
-          select.append("option").attr("value", d.country).text(d.country);
+        select.append("option").attr("value", d.country).text(d.country);
         });
-
-      drawBars(allData
-        .sort((a, b) => Math.abs(b.gap) - Math.abs(a.gap))
-        .slice(0, 15));
     }
 
-    function drawBars(data) {
-      svg.selectAll("*").remove();
+    function drawPieChart(countryData) {
+    svg.selectAll("*").remove();
 
-      const y = d3.scaleBand()
-        .domain(data.map(d => d.country))
-        .range([0, height])
-        .padding(0.1);
+    const data = [
+        { label: "Male Literacy", value: countryData.maleRate },
+        { label: "Female Literacy", value: countryData.femaleRate }
+    ];
 
-      const x = d3.scaleLinear()
-        .domain([-20, 20]) // Adjust based on actual data
-        .range([0, width]);
+    const color = d3.scaleOrdinal()
+        .domain(data.map(d => d.label))
+        .range(["steelblue", "deeppink"]);
 
-      const xAxis = d3.axisBottom(x).ticks(10);
-      const yAxis = d3.axisLeft(y);
+    const pie = d3.pie()
+        .value(d => d.value);
 
-      svg.append("g")
-        .attr("transform", `translate(0,${height})`)
-        .call(xAxis);
+    const arc = d3.arc()
+        .innerRadius(0)
+        .outerRadius(radius);
 
-      svg.append("g").call(yAxis);
-
-      svg.append("text")
-        .attr("class", "axis-label")
-        .attr("x", width / 2)
-        .attr("y", height + 40)
-        .attr("text-anchor", "middle")
-        .text("Literacy Rate Gap (Male % − Female %)");
-
-      svg.append("text")
-        .attr("class", "axis-label")
-        .attr("x", -margin.left + 10)
-        .attr("y", -15)
-        .attr("text-anchor", "start")
-        .text("Country");
-
-      svg.selectAll(".bar")
-        .data(data)
+    svg.selectAll("path")
+        .data(pie(data))
         .enter()
-        .append("rect")
-        .attr("class", d => "bar " + (d.gap < 0 ? "negative" : ""))
-        .attr("x", d => x(Math.min(0, d.gap)))
-        .attr("y", d => y(d.country))
-        .attr("width", d => Math.abs(x(d.gap) - x(0)))
-        .attr("height", y.bandwidth())
-        .append("title") // Tooltip
-        .text(d => `Male: ${d.maleRate}%\nFemale: ${d.femaleRate}%`);
+        .append("path")
+        .attr("d", arc)
+        .attr("fill", d => color(d.data.label))
+        .attr("stroke", "white")
+        .style("stroke-width", "2px");
 
-      svg.selectAll(".label")
-        .data(data)
+    // Labels
+    svg.selectAll("text")
+        .data(pie(data))
         .enter()
         .append("text")
-        .attr("x", d => x(d.gap) + (d.gap >= 0 ? 5 : -5))
-        .attr("y", d => y(d.country) + y.bandwidth() / 2 + 5)
-        .attr("text-anchor", d => d.gap >= 0 ? "start" : "end")
-        .text(d => `${d.gap.toFixed(1)}%`);
-
-      svg.append("text")
-        .attr("class", "annotation")
-        .attr("x", 0)
-        .attr("y", -30)
-        .text("Positive = Higher male literacy | Negative = Higher female literacy");
+        .text(d => `${d.data.label}: ${d.data.value}%`)
+        .attr("transform", d => `translate(${arc.centroid(d)})`)
+        .attr("text-anchor", "middle")
+        .style("font-size", "14px")
+        .style("font-weight", "bold");
     }
 
-    // Trigger dropdown interaction
     d3.select("#country-select").on("change", function () {
-      const selected = this.value;
-      const selectedData = allData.filter(d => d.country === selected);
-      drawBars(selectedData);
+    const selected = this.value;
+    const selectedData = allData.find(d => d.country === selected);
+    drawPieChart(selectedData);
     });
 
     drawScene3();
+
   </script>
 
   <div style="margin-top: 30px; font-size: 18px;">
