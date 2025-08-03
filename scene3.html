@@ -1,1 +1,131 @@
-scene 3
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Scene 3: Literacy Rate by Country (2020)</title>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <style>
+    body {
+      font-family: sans-serif;
+    }
+    .axis-label {
+      font-size: 12px;
+      fill: gray;
+    }
+    .bar {
+      fill: steelblue;
+    }
+    .bar:hover {
+      fill: darkorange;
+    }
+    .annotation {
+      font-weight: bold;
+    }
+    .tooltip {
+      position: absolute;
+      background-color: #fff;
+      border: 1px solid #aaa;
+      padding: 6px;
+      font-size: 12px;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <h2>Literacy Rate by Country in 2020</h2>
+  <svg width="800" height="500"></svg>
+  <div class="tooltip" style="opacity: 0;"></div>
+
+  <script>
+    const margin = { top: 50, right: 30, bottom: 100, left: 60 },
+          width = 800 - margin.left - margin.right,
+          height = 500 - margin.top - margin.bottom;
+
+    const svg = d3.select("svg")
+      .attr("width", width + margin.left + margin.right)
+      .attr("height", height + margin.top + margin.bottom)
+      .append("g")
+      .attr("transform", `translate(${margin.left},${margin.top})`);
+
+    const tooltip = d3.select(".tooltip");
+
+    async function drawScene3() {
+      const dataRaw = await d3.csv("literate-and-illiterate-world-population.csv");
+
+      const data = dataRaw
+        .filter(d => d.Year === "2020" && d["Literacy rate"] !== "")
+        .map(d => ({
+          country: d.Entity,
+          literacy: +d["Literacy rate"]
+        }))
+        .sort((a, b) => b.literacy - a.literacy)
+        .slice(0, 10); // Top 10
+
+      const x = d3.scaleBand()
+        .domain(data.map(d => d.country))
+        .range([0, width])
+        .padding(0.2);
+
+      const y = d3.scaleLinear()
+        .domain([0, 100])
+        .range([height, 0]);
+
+      svg.append("g")
+        .attr("transform", `translate(0,${height})`)
+        .call(d3.axisBottom(x))
+        .selectAll("text")
+        .attr("transform", "rotate(-45)")
+        .style("text-anchor", "end");
+
+      svg.append("g").call(d3.axisLeft(y));
+
+      svg.append("text")
+        .attr("class", "axis-label")
+        .attr("x", width / 2)
+        .attr("y", height + 80)
+        .attr("text-anchor", "middle")
+        .text("Country");
+
+      svg.append("text")
+        .attr("class", "axis-label")
+        .attr("transform", "rotate(-90)")
+        .attr("x", -height / 2)
+        .attr("y", -40)
+        .attr("text-anchor", "middle")
+        .text("Literacy Rate (%)");
+
+      svg.selectAll(".bar")
+        .data(data)
+        .enter()
+        .append("rect")
+        .attr("class", "bar")
+        .attr("x", d => x(d.country))
+        .attr("y", d => y(d.literacy))
+        .attr("width", x.bandwidth())
+        .attr("height", d => height - y(d.literacy))
+        .on("mouseover", (event, d) => {
+          tooltip
+            .style("opacity", 1)
+            .html(`<strong>${d.country}</strong><br/>Literacy: ${d.literacy}%`)
+            .style("left", (event.pageX + 10) + "px")
+            .style("top", (event.pageY - 28) + "px");
+        })
+        .on("mouseout", () => {
+          tooltip.style("opacity", 0);
+        });
+
+      svg.append("text")
+        .attr("class", "annotation")
+        .attr("x", 0)
+        .attr("y", -20)
+        .text("Top 10 countries by youth literacy rate in 2020");
+    }
+
+    drawScene3();
+  </script>
+
+  <div style="margin-top: 30px; font-size: 18px;">
+    <a href="scene2.html">← Previous</a>
+  </div>
+</body>
+</html>
