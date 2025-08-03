@@ -28,13 +28,13 @@
   </style>
 </head>
 <body>
-  <h2>Literacy Rate Among Young Men and Womens (World)</h2>
+  <h2>Literacy Rate Among Young Men and Women (World)</h2>
   <svg width="800" height="500"></svg>
 
   <script>
-    const margin = { top: 50, right: 50, bottom: 50, left: 60 },
-          width = 800 - margin.left - margin.right,
-          height = 500 - margin.top - margin.bottom;
+    const margin = 50,
+          width = 500,
+          height = 400;
 
     const svg = d3.select("svg")
       .attr("width", 800)
@@ -44,7 +44,7 @@
 
     async function drawScene2() {
       const [menData, womenData] = await Promise.all([
-        d3.csv("youth-literacy-male.csv"),
+        d3.csv("youth-literacy-males.csv"),
         d3.csv("youth-literacy-female.csv")
       ]);
 
