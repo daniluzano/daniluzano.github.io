@@ -62,12 +62,12 @@
       const y = d3.scaleBand().domain(data.map(d => d.country)).range([0, height]).padding(0.3);
 
       svg.append("g").attr("transform", `translate(0,${height})`).call(d3.axisBottom(x));
-      svg.append("g").call(d3.axisLeft(y));
+      svg.append("g").attr("class", "y-axis").call(d3.axisLeft(y));
 
       function update(minGap) {
         const filtered = data.filter(d => d.gap >= minGap).slice(0, 15);
         y.domain(filtered.map(d => d.country));
-        svg.select("g").call(d3.axisLeft(y));
+        svg.select(".y-axis").transition().duration(500).call(d3.axisLeft(y));
 
         const bars = svg.selectAll(".bar-group").data(filtered, d => d.country);
         bars.exit().remove();
@@ -118,3 +118,4 @@
   </div>
 </body>
 </html>
+
