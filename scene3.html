@@ -29,15 +29,13 @@
     <input type="range" id="gapThreshold" min="0" max="20" value="0" step="0.5" style="width:300px;">
     <span id="gapValue">0%</span>
 
-  <!-- Tooltip div -->
+  <!-- tooltip -->
   <div id="tooltip" style="
     position: absolute;
     background: white;
     border: 1px solid gray;
     padding: 6px 10px;
     border-radius: 4px;
-    pointer-events: none;
-    opacity: 0;
     font-size: 14px;
     box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
   "></div>
@@ -57,7 +55,7 @@ const svg = d3.select("svg")
 
 const tooltip = d3.select("#tooltip");
 
-let gapData = []; // <-- Declare globally so updateChart can access
+let gapData = []; //global so update=chart
 
 const y = d3.scaleBand()
   .range([0, height])
@@ -100,16 +98,14 @@ async function drawScene3() {
     .sort((a, b) => Math.abs(b.gap) - Math.abs(a.gap))
     .slice(0, 15);
 
-  // Initialize y domain with all gapData countries
   y.domain(gapData.map(d => d.country));
 
-  // Draw static axes (x-axis and initial y-axis)
   svg.append("g")
     .attr("transform", `translate(0,${height})`)
     .call(xAxis);
 
   svg.append("g")
-    .attr("class", "y-axis") // Give a class to select later for updates
+    .attr("class", "y-axis") 
     .call(yAxis);
 
   svg.append("text")
@@ -126,7 +122,7 @@ async function drawScene3() {
     .attr("text-anchor", "start")
     .text("Country");
 
-    // Largest gap country label
+    // largest gap label
 const largestGap = gapData.reduce((a, b) => Math.abs(a.gap) > Math.abs(b.gap) ? a : b);
 
 svg.append("text")
@@ -137,7 +133,6 @@ svg.append("text")
   .style("fill", "red")
   .text(`Largest gap: ${largestGap.country}`);
 
-// Zero line annotation
 svg.append("text")
   .attr("x", x(0))
   .attr("y", -10)
@@ -146,7 +141,6 @@ svg.append("text")
   .style("font-style", "italic")
   .text("Zero gap = Gender parity");
 
-// More explicit explanation of gap direction
 svg.append("text")
   .attr("x", width / 2)
   .attr("y", height + 50)
@@ -154,20 +148,16 @@ svg.append("text")
   .attr("text-anchor", "middle")
   .text("Positive gap = Higher male literacy | Negative gap = Higher female literacy");
 
-
-  // Initially draw bars and labels with full data
   updateChart(0);
 }
 
 function updateChart(minGap) {
-  // Filter data based on absolute gap threshold
+  // filter based on gap 
   const filteredData = gapData.filter(d => Math.abs(d.gap) >= minGap);
 
-  // Update y domain and axis
   y.domain(filteredData.map(d => d.country));
   svg.select("g.y-axis").transition().duration(500).call(yAxis);
 
-  // DATA JOIN bars
   const bars = svg.selectAll(".bar")
     .data(filteredData, d => d.country);
 
@@ -206,7 +196,6 @@ function updateChart(minGap) {
       tooltip.style("opacity", 0);
     });
 
-  // DATA JOIN labels
   const labels = svg.selectAll(".label")
     .data(filteredData, d => d.country);
 
@@ -227,7 +216,6 @@ function updateChart(minGap) {
     .text(d => `${d.gap.toFixed(1)}%`);
 }
 
-// Listen for slider input changes
 d3.select("#gapThreshold").on("input", function() {
   const minGap = +this.value;
   d3.select("#gapValue").text(minGap + "%");

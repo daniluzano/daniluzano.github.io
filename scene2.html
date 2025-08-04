@@ -93,7 +93,7 @@
         .attr("text-anchor", "middle")
         .text("Literacy Rate (%)");
 
-      // Line for men
+      // men
       const lineMen = d3.line()
         .x(d => x(d.Year))
         .y(d => y(d.Rate));
@@ -103,7 +103,7 @@
         .attr("class", "line-men")
         .attr("d", lineMen);
 
-      // Line for women
+      // women 
       const lineWomen = d3.line()
         .x(d => x(d.Year))
         .y(d => y(d.Rate));
@@ -113,7 +113,6 @@
         .attr("class", "line-women")
         .attr("d", lineWomen);
 
-      // Add annotation for 2020 points
       const lastYear = 2020;
       const men2020 = men.find(d => d.Year === lastYear);
       const women2020 = women.find(d => d.Year === lastYear);
@@ -136,7 +135,7 @@
         .attr("y", y(men2020.Rate) - 10)
         .text(`2020: Men ${men2020.Rate}%  |  Women ${women2020.Rate}%`);
 
-      // Gender parity annotation at recent year
+      //annotations
       const parityYear = 2020;
 
       svg.append("text")
@@ -145,14 +144,12 @@
         .attr("class", "annotation")
         .text("Nearly equal literacy rates in 2020");
 
-      // Historical gap annotation around mid-century (example: 1950)
       svg.append("text")
         .attr("x", x(1950))
         .attr("y", y(70))
         .attr("class", "annotation")
         .text("Historical gender gap");
 
-      // Max literacy rate label near top
       svg.append("text")
         .attr("x", width - 60)
         .attr("y", y(100) - 10)
