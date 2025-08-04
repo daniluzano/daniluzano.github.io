@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Scene 2: Literacy Rate by Gender</title>
+  <meta charset="UTF-8">
+  <title>Scene 2: Literacy by Gender</title>
   <script src="https://d3js.org/d3.v7.min.js"></script>
   <style>
     body {
@@ -24,42 +24,28 @@
     }
     .annotation {
       font-weight: bold;
-      fill: #333;
-      font-size: 12px;
-      pointer-events: none;
+      font-size: 13px;
     }
   </style>
 </head>
 <body>
   <h2>Literacy Rate Among Young Men and Women (World)</h2>
   <svg width="800" height="500"></svg>
-
   <script>
-    const margin = { top: 50, right: 50, bottom: 50, left: 70 },
-      width = 800 - margin.left - margin.right,
-      height = 500 - margin.top - margin.bottom;
+    const margin = { top: 50, right: 50, bottom: 50, left: 60 },
+          width = 800 - margin.left - margin.right,
+          height = 500 - margin.top - margin.bottom;
 
     const svg = d3.select("svg")
-      .attr("width", 800)
-      .attr("height", 500)
       .append("g")
       .attr("transform", `translate(${margin.left},${margin.top})`);
 
-    async function drawScene2() {
-      const [menData, womenData] = await Promise.all([
-        d3.csv("youth-literacy-males.csv"),
-        d3.csv("youth-literacy-female.csv")
-      ]);
-
-      const men = menData.filter(d => d.Entity === "World").map(d => ({
-        Year: +d.Year,
-        Rate: +d["Literacy rate among young men"]
-      }));
-
-      const women = womenData.filter(d => d.Entity === "World").map(d => ({
-        Year: +d.Year,
-        Rate: +d["Literacy rate among young women"]
-      }));
+    Promise.all([
+      d3.csv("youth-literacy-males.csv"),
+      d3.csv("youth-literacy-female.csv")
+    ]).then(([menData, womenData]) => {
+      const men = menData.filter(d => d.Entity === "World").map(d => ({ Year: +d.Year, Rate: +d["Literacy rate among young men"] }));
+      const women = womenData.filter(d => d.Entity === "World").map(d => ({ Year: +d.Year, Rate: +d["Literacy rate among young women"] }));
 
       const x = d3.scaleLinear()
         .domain(d3.extent(men, d => d.Year))
@@ -69,97 +55,35 @@
         .domain([70, 100])
         .range([height, 0]);
 
-      const xAxis = d3.axisBottom(x).tickFormat(d3.format("d"));
-      const yAxis = d3.axisLeft(y);
+      svg.append("g").attr("transform", `translate(0,${height})`).call(d3.axisBottom(x).tickFormat(d3.format("d")));
+      svg.append("g").call(d3.axisLeft(y));
 
-      svg.append("g")
-        .attr("transform", `translate(0,${height})`)
-        .call(xAxis);
+      const lineMen = d3.line().x(d => x(d.Year)).y(d => y(d.Rate));
+      const lineWomen = d3.line().x(d => x(d.Year)).y(d => y(d.Rate));
 
-      svg.append("g").call(yAxis);
-
-      svg.append("text")
-        .attr("class", "axis-label")
-        .attr("x", width / 2)
-        .attr("y", height + 40)
-        .attr("text-anchor", "middle")
-        .text("Year");
-
-      svg.append("text")
-        .attr("class", "axis-label")
-        .attr("transform", "rotate(-90)")
-        .attr("x", -height / 2)
-        .attr("y", -50)
-        .attr("text-anchor", "middle")
-        .text("Literacy Rate (%)");
-
-      // men
-      const lineMen = d3.line()
-        .x(d => x(d.Year))
-        .y(d => y(d.Rate));
-
-      svg.append("path")
-        .datum(men)
-        .attr("class", "line-men")
-        .attr("d", lineMen);
-
-      // women 
-      const lineWomen = d3.line()
-        .x(d => x(d.Year))
-        .y(d => y(d.Rate));
-
-      svg.append("path")
-        .datum(women)
-        .attr("class", "line-women")
-        .attr("d", lineWomen);
+      svg.append("path").datum(men).attr("class", "line-men").attr("d", lineMen);
+      svg.append("path").datum(women).attr("class", "line-women").attr("d", lineWomen);
 
       const lastYear = 2020;
       const men2020 = men.find(d => d.Year === lastYear);
       const women2020 = women.find(d => d.Year === lastYear);
 
-      svg.append("circle")
-        .attr("cx", x(men2020.Year))
-        .attr("cy", y(men2020.Rate))
-        .attr("r", 4)
-        .attr("fill", "steelblue");
-
-      svg.append("circle")
-        .attr("cx", x(women2020.Year))
-        .attr("cy", y(women2020.Rate))
-        .attr("r", 4)
-        .attr("fill", "deeppink");
+      svg.append("circle").attr("cx", x(men2020.Year)).attr("cy", y(men2020.Rate)).attr("r", 4).attr("fill", "steelblue");
+      svg.append("circle").attr("cx", x(women2020.Year)).attr("cy", y(women2020.Rate)).attr("r", 4).attr("fill", "deeppink");
 
       svg.append("text")
+        .attr("x", x(1995))
+        .attr("y", y(92))
         .attr("class", "annotation")
-        .attr("x", x(men2020.Year) - 180)
-        .attr("y", y(men2020.Rate) - 10)
-        .text(`2020: Men ${men2020.Rate}%  |  Women ${women2020.Rate}%`);
-
-      //annotations
-      const parityYear = 2020;
+        .text("Closing gender gap since 1980s");
 
       svg.append("text")
-        .attr("x", x(parityYear) - 80)
-        .attr("y", y(men2020.Rate) - 30)
+        .attr("x", x(lastYear) - 120)
+        .attr("y", y(men2020.Rate) - 25)
         .attr("class", "annotation")
-        .text("Nearly equal literacy rates in 2020");
-
-      svg.append("text")
-        .attr("x", x(1950))
-        .attr("y", y(70))
-        .attr("class", "annotation")
-        .text("Historical gender gap");
-
-      svg.append("text")
-        .attr("x", width - 60)
-        .attr("y", y(100) - 10)
-        .attr("class", "annotation")
-        .text("Max ~100%");
-    }
-
-    drawScene2();
+        .text(`2020: Men ${men2020.Rate.toFixed(1)}% | Women ${women2020.Rate.toFixed(1)}%`);
+    });
   </script>
-
   <div style="margin-top: 30px; font-size: 18px;">
     <a href="index.html">← Previous</a>
     &nbsp;&nbsp;&nbsp;
