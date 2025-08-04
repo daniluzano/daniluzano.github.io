@@ -72,16 +72,16 @@
       svg.append("circle").attr("cx", x(women2020.Year)).attr("cy", y(women2020.Rate)).attr("r", 4).attr("fill", "deeppink");
 
       svg.append("text")
-        .attr("x", x(1995))
+        .attr("x", x(1980))
         .attr("y", y(92))
         .attr("class", "annotation")
         .text("We see that the gender gap has been closing since the 1980s");
 
       svg.append("text")
-        .attr("x", x(lastYear) - 120)
+        .attr("x", x(lastYear) - 200)
         .attr("y", y(men2020.Rate) - 25)
         .attr("class", "annotation")
-        .text(`2020: Men ${men2020.Rate.toFixed(1)}% | Women ${women2020.Rate.toFixed(1)}%`);
+        .text(`Literacy rates in 2020: Men ${men2020.Rate.toFixed(1)}% | Women ${women2020.Rate.toFixed(1)}%`);
     });
   </script>
   <div style="margin-top: 30px; font-size: 18px;">
