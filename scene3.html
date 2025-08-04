@@ -71,6 +71,8 @@
 
         const bars = svg.selectAll(".bar-group").data(filtered, d => d.country);
         bars.exit().remove();
+        bars.transition().duration(500)
+        .attr("transform", d => `translate(0, ${y(d.country)})`);
 
         const group = bars.enter()
           .append("g")
